@@ -418,34 +418,6 @@ Flip the metric to show churn instead of retention:
 
 ---
 
-## 💡 Interpretation Tips
-
-### Reading Retention Patterns
-
-**Healthy SaaS Pattern**:
-- Month 1: 80-90% (minor early churn)
-- Month 3: 70-85% (flattening out)
-- Month 12: 60-80% (stable base)
-
-**Retail Pattern**:
-- Quarter 1: 20-40% (typical for retail)
-- Quarter 4: 15-35% (loyal shoppers identified)
-- Quarter 8+: 10-30% (core customer base)
-
-**Subscription Pattern**:
-- Month 1: 85-95% (contract lock-in)
-- Month 6: 70-85% (first renewal)
-- Month 12: 60-80% (annual renewal)
-
-### Common Pitfalls
-
-❌ **Ignoring cohort size**: Small cohorts (<50) may show volatile retention  
-❌ **No industry benchmark**: Don't know if 30% is good or bad  
-❌ **Not segmenting**: Averages hide important differences  
-❌ **Forgetting seasonality**: Q4 cohorts may always differ
-
----
-
 ## 🔄 Next Steps After Building
 
 ### 1. Establish Baselines
@@ -506,48 +478,12 @@ Visit the [Tableau Public link](https://public.tableau.com/app/profile/daria.sav
 
 ---
 
-## 🎨 Customization Ideas
-
-- **Multiple Metrics**: Create separate tables for revenue retention, order frequency
-- **Predictive View**: Add trend lines to forecast future retention
-- **Comparison View**: Side-by-side cohorts for different segments
-- **Alerts**: Highlight cohorts falling below threshold
-- **Annotations**: Mark significant business events (product launches, pricing changes)
-
----
-
-## 📚 Learn More About Cohort Analysis
-
-### Recommended Resources
-- **Articles**: Search "cohort analysis best practices"
-- **Books**: "Lean Analytics" by Alistair Croll
-- **Courses**: Product analytics courses covering cohort analysis
-
 ### Key Metrics to Track Alongside
 - **Customer Acquisition Cost (CAC)**
 - **Customer Lifetime Value (CLV)**
 - **Monthly Recurring Revenue (MRR)**
 - **Churn Rate**
 - **Net Revenue Retention**
-
----
-
-## 🤝 Use Cases by Industry
-
-### E-commerce
-Track repeat purchase rates, identify loyal customers, optimize retention marketing
-
-### SaaS
-Monitor subscription renewals, validate product stickiness, reduce churn
-
-### Subscription Services
-Analyze contract renewals, identify at-risk customers, improve onboarding
-
-### Marketplace Platforms
-Track buyer/seller retention, optimize matching algorithms, improve user experience
-
-### Financial Services
-Monitor account activity, identify dormant accounts, increase engagement
 
 ---
 
