@@ -13,7 +13,7 @@ A Tableau cohort analysis dashboard that visualizes customer retention rates ove
 
 ## 🖼️ Dashboard Preview
 
-![Customer Retention Cohort Analysis](screenshots/customer_retention.png)
+![Customer Retention Cohort Analysis](screenshots/customer retention.png)
 
 *Cohort retention matrix showing quarterly customer retention rates from acquisition through 15+ quarters*
 
