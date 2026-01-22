@@ -81,7 +81,7 @@ Cohort analysis groups customers by their acquisition date (cohort) and tracks t
 
 **2021 Q1 Cohort:**
 - Started with 123 customers (100%)
-- Quarter 1: 27% still active (33 customers)
+- Quarter 1: 17% still active (21 customers)
 - Quarter 2: 24% still active (30 customers)
 - Quarter 15: 54% still active (66 customers)
 
@@ -125,132 +125,198 @@ CUST002     | 2021-02-10  | ORD-003
 **Note**: This dashboard uses Tableau's built-in "Sample - EU Superstore" dataset. You can use any dataset with customer purchase history.
 
 ---
+---
 
-### Step 1: Identify First Purchase Date
+## 📖 Step-by-Step Build Guide
 
-Create a calculated field to find when each customer first purchased:
+### Prerequisites
+- Tableau Desktop or Tableau Public
+- Dataset with: Customer Name, Order Date fields
+- Sample data structure:
+  ```
+  Customer Name | Order Date
+  --------------|------------
+  John Smith    | 2021-01-15
+  John Smith    | 2021-04-20
+  Jane Doe      | 2021-02-10
+  ```
 
-#### First Purchase Date (LOD Calculation)
-```tableau
-{FIXED [Customer ID]: MIN([Order Date])}
-```
-
-**What this does**: For each customer, finds their very first order date regardless of filters.
+### Data Preparation
+Before starting, ensure your data has:
+- A **Customer Name** field (unique customer identifier)
+- An **Order Date** field (transaction date)
+- Ideally multiple years of purchase data
 
 ---
 
-### Step 2: Determine Acquisition Quarter
+### Step 1: Determine Acquisition Quarter
 
-Group customers by the quarter they were acquired:
+This calculation identifies when each customer first made a purchase and groups them by quarter:
 
 #### Acquisition Quarter
 ```tableau
-DATETRUNC('quarter', [First Purchase Date])
-```
-
-**Alternative with better labels**:
-```tableau
-DATENAME('quarter', [First Purchase Date]) 
-+ " " + 
-STR(YEAR([First Purchase Date]))
-```
-Example output: "Q1 2021"
-
----
-
-### Step 3: Calculate Quarters Since Acquisition
-
-Determine how many quarters have passed since each customer's first purchase:
-
-#### Quarters Since Acquisition
-```tableau
-DATEDIFF('quarter', [First Purchase Date], [Order Date])
+DATE({FIXED [Customer Name]: MIN(DATETRUNC('quarter', [Order Date]))})
 ```
 
 **What this does**: 
-- If order was in same quarter as first purchase → 0
-- If order was 1 quarter later → 1
-- If order was 2 quarters later → 2
-- And so on...
+- `{FIXED [Customer Name]: MIN(...)}` - For each customer, finds their very first order date
+- `DATETRUNC('quarter', [Order Date])` - Truncates to the start of the quarter
+- `DATE(...)` - Wraps in DATE() function for proper date formatting
+- This creates the cohort grouping
+
+**Important**: This will be placed on **Rows** as a **discrete (blue) exact date** dimension
+
+**Example**: If a customer's first order was March 15, 2021, this returns 2021-01-01 (Q1 2021)
 
 ---
 
-### Step 4: Count New Customers per Cohort
+### Step 2: Calculate Quarters Since First Order
+
+Determine how many quarters have passed since each customer's first purchase:
+
+#### Quarters Since First Order
+```tableau
+DATEDIFF('quarter', [Acquisition Quarter], DATETRUNC('quarter', [Order Date]))
+```
+
+**What this does**: 
+- Takes the difference in quarters between acquisition and current order
+- `DATETRUNC('quarter', [Order Date])` - Truncates current order to quarter start
+- Returns 0 for orders in acquisition quarter, 1 for next quarter, etc.
+
+**Important**: This will be placed on **Columns** as a **discrete (blue) dimension**
+
+**Example**:
+- Customer acquired in Q1 2021 (Jan-Mar)
+- Order placed in Q1 2021 → Returns 0
+- Order placed in Q2 2021 → Returns 1
+- Order placed in Q3 2021 → Returns 2
+
+---
+
+### Step 3: Count New Customers per Cohort
 
 Create a calculation that counts unique customers acquired in each quarter:
 
 #### New Customers
 ```tableau
-{FIXED [Acquisition Quarter]: COUNTD([Customer ID])}
+{FIXED [Acquisition Quarter]: COUNTD([Customer Name])}
 ```
 
-**Purpose**: Shows cohort size for context (larger cohorts may have different patterns).
+**Purpose**: 
+- Shows cohort size for context
+- Larger cohorts may have different retention patterns
+- Used as denominator in retention rate calculation
+
+**Important**: This will be placed on **Rows** after Acquisition Quarter as a **discrete dimension**
+
+**Example**: If 123 customers made their first purchase in Q1 2021, this returns 123
 
 ---
 
-### Step 5: Count Retained Customers
-
-For each cohort and quarter combination, count how many customers are still active:
-
-#### Retained Customers
-```tableau
-COUNTD([Customer ID])
-```
-
-**Note**: This is just a distinct count - Tableau will aggregate based on your dimensions.
-
----
-
-### Step 6: Calculate Retention Rate
+### Step 4: Calculate Retention Rate
 
 The key metric - what percentage of the original cohort is still active:
 
 #### Retention Rate
 ```tableau
-COUNTD([Customer ID]) / [New Customers]
+COUNTD([Customer Name]) / SUM([New Customers])
 ```
 
 **Format**: Percentage, 0 decimal places
 
 **Logic**:
-- Numerator: How many customers from this cohort made purchases in this period
-- Denominator: How many customers were in this cohort originally
-- Result: % still active
+- **Numerator**: `COUNTD([Customer Name])` - How many unique customers from this cohort made purchases in this period
+- **Denominator**: `SUM([New Customers])` - How many customers were in this cohort originally
+- **Result**: % of original cohort still active
+
+**Important**: 
+- This goes on **Color** shelf (creates heat map)
+- Also place on **Text** shelf to display percentages
 
 ---
 
-### Step 7: Build the Cohort Table
+### Step 5: Build the Cohort Table
 
-#### 7.1 Create Worksheet
+#### 5.1 Create Worksheet
 1. Create new worksheet
 2. Name it "Retention Rate" or "Cohort Analysis"
 
-#### 7.2 Add Dimensions
+#### 5.2 Add Dimensions to Rows
 1. **Drag [Acquisition Quarter] to Rows**
-   - Right-click → Sort → Descending (most recent on bottom)
-   
-2. **Drag [Quarters Since Acquisition] to Columns**
-   - Ensure it's discrete (blue pill)
-   - Right-click → Sort → Ascending
+   - Make sure it's **discrete (blue pill)**
+   - Change to **exact date** (right-click → select second option under date)
+   - Right-click → Sort → Descending (newest on bottom) or Ascending (oldest on top)
 
-#### 7.3 Add Metrics
-1. **Drag [Retention Rate] to Text**
-   - This displays the percentage in each cell
+2. **Drag [New Customers] to Rows** (place after Acquisition Quarter)
+   - Make sure it's **discrete (blue pill)**
+   - This displays cohort size next to each acquisition quarter
 
-2. **Drag [Retention Rate] to Color**
+#### 5.3 Add Dimension to Columns
+1. **Drag [Quarters Since First Order] to Columns**
+   - Ensure it's **discrete (blue pill)**
+   - Right-click → Sort → Ascending (0, 1, 2, 3...)
+   - This creates the columns showing time progression
+
+#### 5.4 Add Metrics
+1. **Drag [Retention Rate] to Color**
    - Creates heat map visualization
-   - High retention = darker color
-   - Low retention = lighter color
+   - High retention = darker blue
+   - Low retention = lighter blue
 
-3. **Drag [New Customers] to Rows**
-   - Place it after Acquisition Quarter
-   - Right-click → Dual Axis → No (keep separate)
-   - This shows cohort size
+#### 5.5 Format the View
+1. **Change Mark Type**: 
+   - Click Marks card → Change to **Square**
+   - Change Fit to Entire View
 
-#### 7.4 Change Mark Type
+2. **Color Scheme**:
+   - Click Color → Choose Blue sequential palette
+   - Ensure darker = higher retention
+   - Click "Reversed" if needed
+
+3. **Text Labels**:
+   - Click Label → Format as percentage
+   - Bold font, center alignment
+   - Adjust size (10-12pt works well)
+
+4. **Borders**:
+   - Format → Borders
+   - Add light gray cell borders for clarity
+
+---
+
+### Step 6: Final Formatting
+
+1. **Headers**:
+   - Keep column headers (0, 1, 2, 3...) visible
+   - These indicate quarters since acquisition
+
+2. **Title**:
+   - Add descriptive title: "Customer Retention by Quarter"
+   - Include subtitle explaining the metric
+
+3. **Tooltips** (optional):
+   - Customize to show: Acquisition Quarter, Quarters Since First Order, Retention Rate, Number of Active Customers
+
+---
+
+## ✅ Final Checklist
+
+- [ ] Acquisition Quarter on Rows (discrete, exact date)
+- [ ] New Customers on Rows (discrete)
+- [ ] Quarters Since First Order on Columns (discrete)
+- [ ] Retention Rate on Color (blue scale)
+- [ ] Mark type is Square
+- [ ] Colors are sequential (darker = better)
+- [ ] Text is readable and centered
+
+---
+
+Your cohort retention matrix is now complete!
+
 1. Click on Marks card
 2. Change from Automatic to **Square**
-3. Increase size using Size slider
+3. Change Fit to Entire View
 
 ---
 
@@ -311,14 +377,6 @@ Add a clear title explaining the metric:
 ---
 
 ### Step 10: Add Interactivity (Optional)
-
-#### 10.1 Filters
-Add filters for:
-- **Date Range**: Focus on specific time periods
-- **Product Category**: Compare retention across product lines
-- **Customer Segment**: B2B vs B2C, etc.
-
-#### 10.2 Tooltips
 Enhance tooltips to show:
 ```
 Acquisition Quarter: <Acquisition Quarter>
@@ -327,12 +385,6 @@ Retention Rate: <AGG(Retention Rate)>
 Customers Active: <COUNTD(Customer ID)>
 Original Cohort Size: <New Customers>
 ```
-
-#### 10.3 Reference Lines
-Add reference lines:
-- Industry benchmark retention rate
-- Company target retention rate
-
 ---
 
 ## 📊 Advanced Variations
@@ -418,35 +470,6 @@ Flip the metric to show churn instead of retention:
 
 ---
 
-## 🔄 Next Steps After Building
-
-### 1. Establish Baselines
-- Calculate your current retention metrics
-- Document as benchmarks for future comparison
-
-### 2. Set Targets
-- Define "good" retention for your business
-- Set improvement goals (e.g., +5% retention by Q4)
-
-### 3. Segment Analysis
-Build separate views for:
-- Customer segments (B2B vs B2C)
-- Product categories
-- Geographic regions
-- Acquisition channels
-
-### 4. Regular Monitoring
-- Review monthly or quarterly
-- Look for trends in recent cohorts
-- Investigate sudden changes
-
-### 5. Action Planning
-- Identify weak retention periods
-- Develop targeted interventions
-- Measure impact on subsequent cohorts
-
----
-
 ## 📝 Files Included
 
 ```
@@ -475,15 +498,6 @@ Visit the [Tableau Public link](https://public.tableau.com/app/profile/daria.sav
 3. Connect to your own customer data
 4. Adjust calculations for your business logic (monthly vs quarterly cohorts)
 5. Customize colors and formatting
-
----
-
-### Key Metrics to Track Alongside
-- **Customer Acquisition Cost (CAC)**
-- **Customer Lifetime Value (CLV)**
-- **Monthly Recurring Revenue (MRR)**
-- **Churn Rate**
-- **Net Revenue Retention**
 
 ---
 
